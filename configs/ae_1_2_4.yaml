@@ -1,0 +1,120 @@
+model:
+  base_learning_rate: 4.5e-6
+  target: AE.autoencoder.AutoencoderKL
+  params:
+    monitor: "val/rec_loss"
+    embed_dim: 3
+    lossconfig:
+      target: AE.modules.losses.LPIPSWithDiscriminator
+      params:
+        disc_start: 5001
+        disc_in_channels: 4
+        kl_weight: 0.000001
+        disc_weight: 0.5
+        perceptual_weight: 0.0
+
+        divergence_loss: True
+        divergence_loss_weight: 0.1
+        vortex_loss: True
+        vortex_loss_weight: 0.1
+        curvature_loss: False
+        curvature_loss_weight: 0.1
+
+
+    ddconfig:
+      double_z: True
+      z_channels: 4
+      resolution: 128
+      in_channels: 4
+      out_ch: 4
+      ch: 128
+      ch_mult: [1,2]  # num_down = len(ch_mult)-1
+      num_res_blocks: 2
+      attn_resolutions: [ ]
+      dropout: 0.0
+      sigmoid_alpha: True # Added by Omar 
+
+data:
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 2
+    num_workers: 30
+    wrap: False
+    train:
+      target: AE.data.les.LEStrain
+      params:
+        #data_root: "/projects/ai4wind/acortiel/inflows/test_data_tiles/train/"
+        data_root: "/home/grads/o/osallam/NREL/Data/train/"
+        data_bounds: [-7.919965030946801,
+                      11.79005936973698,
+                      -7.63168882538538,
+                      7.966333775600006,
+                      -18.383677884462408,
+                      7.61545947024111,
+                      0.0,
+                      1.0
+                    ] # [umin, umax, vmin, vmax[, wmin, wmax]]
+        image_size: [128, 128]
+        apply_transforms: False  # Added  by Omar
+    validation:
+      target: AE.data.les.LESvalidation
+      params:
+#        data_root: "/projects/ai4wind/acortiel/inflows/test_data_tiles/val/"
+        data_root: "/home/grads/o/osallam/NREL/Data/val/"
+
+        data_bounds: [-5.332108601090339,
+                      11.481899979755081,
+                      -7.099838897904188,
+                      6.232987513246276,
+                      -16.02040640924077,
+                      7.34472398896453,
+                      0.0,
+                      1.0
+                    ] # [umin, umax, vmin, vmax[, wmin, wmax]]
+        image_size: [128, 128]
+        apply_transforms: False  # Added  by Omar
+    test:
+      target: AE.data.les.LEStest
+      params:
+        #data_root: "/projects/ai4wind/acortiel/inflows/test_data_tiles/test/"
+        data_root: "/home/grads/o/osallam/NREL/Data/test/"
+        data_bounds: [-5.385433726295767,
+                      11.36462743507943,
+                      -5.698430395585303,
+                      6.789514771323431,
+                      -14.822707858855855,
+                      6.5132283609400154,
+                      0.0,
+                      1.0
+                    ]  # [umin, umax, vmin, vmax[, wmin, wmax]]
+        image_size: [128, 128]
+        apply_transforms: False  # Added  by Omar
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 100
+        max_images: 0
+        increase_log_steps: True
+        clamp: False
+
+    model_checkpoint:
+      target: pytorch_lightning.callbacks.ModelCheckpoint
+      params:
+      #  dirpath: checkpoints/
+      #  filename: '{epoch}-{step}-{val_loss:.2f}'
+        save_top_k: -1  # Save all checkpoints
+        every_n_train_steps: 2000  # Save a checkpoint every 500 training steps
+        save_last: True
+        save_on_train_epoch_end: False
+
+  trainer:
+    benchmark: True
+    accumulate_grad_batches: 12
+    max_steps: 20000
+    log_every_n_steps: 20
+    accelerator: gpu
+
+wandb_logger:
+  key: '0ca1d12556ab32c528ce4c5827085f273dabcc44'
