@@ -2,7 +2,7 @@
 import argparse
 import torch
 from omegaconf import OmegaConf
-from ldm.util import instantiate_from_config
+from AE.util import instantiate_from_config
 # from ldm.models.diffusion.ddim import DDIMSampler
 # import sys
 import os
